@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediaRecorder Streamer and Capture</title>
+    <!-- <script src="./script.js"></script> -->
+  </head>
+
+  <body>
+    <!-- <h1>My MediaRecorder Streamer</h1>
+    <video id="video" width="720" height="480"></video
+    ><span id="time">00:00</span> <button id="startBtn">Record</button
+    ><button id="stopBtn" disabled>Stop</button> -->
+    <div>
+      <button id="request" onclick="requestVideo()">Request Camera</button>
+      <button id="start" onclick="startRecording()">Start Recording</button>
+      <button id="stop" onclick="stopRecording()">Stop Recording</button>
+      <ul id="ul">
+        Downloads List:
+      </ul>
+    </div>
+    <video
+      id="gum"
+      width="720"
+      height="480"
+      controls
+      autoplay
+      playsinline
+      muted
+    ></video>
+
+    <video id="video" autoplay></video>
+    <script>
+      var video,
+        reqBtn,
+        startBtn,
+        stopBtn,
+        ul,
+        stream,
+        recorder,
+        streamletRecorder,
+        streamletUpload;
+      video = document.getElementById("video");
+      reqBtn = document.getElementById("request");
+      startBtn = document.getElementById("start");
+      stopBtn = document.getElementById("stop");
+      ul = document.getElementById("ul");
+      startBtn.disabled = true;
+      ul.style.display = "none";
+      stopBtn.disabled = true;
+      const mediaStream = new MediaStream();
+
+      function requestVideo() {
+        navigator.mediaDevices
+          .getUserMedia({
+            video: true,
+            audio: true,
+          })
+          .then((stm) => {
+            stream = stm;
+            reqBtn.style.display = "none";
+            startBtn.removeAttribute("disabled");
+            video.srcObject = mediaStream;
+            const gumVideo = document.querySelector("video#gum");
+            gumVideo.srcObject = stream;
+          })
+          .catch((e) => console.error(e));
+      }
+
+      function startRecording() {
+        recorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm;codecs=h264,vp9,opus"',
+          bitsPerSecond: 5000000,
+        });
+        streamletRecorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm;codecs=h264,vp9,opus"',
+          bitsPerSecond: 5000000,
+        });
+        recorder.start();
+        streamletRecorder.start();
+        uploadStreamlet();
+        stopBtn.removeAttribute("disabled");
+        startBtn.disabled = true;
+      }
+
+      function uploadStreamlet() {
+        setInterval(() => {
+          streamletRecorder.stop();
+          streamletRecorder.ondataavailable = (e) => {
+            ul.style.display = "block";
+            var a = document.createElement("a"),
+              li = document.createElement("li");
+            a.download = [
+              "streamlet_video_",
+              (new Date() + "").slice(4, 28),
+              ".webm",
+            ].join("");
+            a.href = URL.createObjectURL(e.data);
+            a.textContent = a.download;
+            li.appendChild(a);
+            ul.appendChild(li);
+          };
+          streamletRecorder.start();
+        }, 3000);
+      }
+
+      function stopRecording() {
+        recorder.ondataavailable = (e) => {
+          ul.style.display = "block";
+          var a = document.createElement("a"),
+            li = document.createElement("li");
+          a.download = [
+            "full_video_",
+            (new Date() + "").slice(4, 28),
+            ".webm",
+          ].join("");
+          a.href = URL.createObjectURL(e.data);
+          a.textContent = a.download;
+          li.appendChild(a);
+          ul.appendChild(li);
+        };
+        recorder.stop();
+        streamletRecorder.stop();
+        startBtn.removeAttribute("disabled");
+        stopBtn.disabled = true;
+      }
+      //INSTEAD OF NEEDING TO PRESS STOP_RECORDING TO SAVE VIDEO, SAVE THE VIDEO EVERY 5 SECONS
+    </script>
+    <!-- <script>
+      const videoElement = document.getElementById("video");
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      let mediaRecorder;
+      let recordedChunks = [];
+      let seconds = 0;
+      let timerInterval;
+
+      startBtn.addEventListener("click", async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          videoElement.srcObject = stream;
+          await videoElement.play();
+
+          recordedChunks = [];
+          const options = { mimeType: "video/webm; codecs=vp9" };
+          mediaRecorder = new MediaRecorder(stream, options);
+
+          mediaRecorder.addEventListener("dataavailable", (event) => {
+            if (event.data.size > 0) {
+              recordedChunks.push(event.data);
+            }
+          });
+
+          mediaRecorder.addEventListener("stop", () => {
+            clearInterval(timerInterval); // Stop the timer
+            videoElement.pause(); // Pause the video stream
+            const blob = new Blob(recordedChunks, { type: "video/webm" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "recording.webm";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            recordedChunks = [];
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+          }); // Start the timer
+
+          seconds = 0;
+          timerInterval = setInterval(() => {
+            seconds++;
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            const timeString = `${minutes
+              .toString()
+              .padStart(2, "0")}:${remainingSeconds
+              .toString()
+              .padStart(2, "0")}`;
+            document.getElementById("time").textContent = timeString;
+          }, 1000);
+
+          mediaRecorder.start();
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        } catch (error) {
+          console.error(error);
+        }
+      });
+
+      stopBtn.addEventListener("click", () => {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          clearInterval(timerInterval); // Stop the timer
+          videoElement.pause(); // Pause the video stream
+          mediaRecorder.stop();
+          videoElement.srcObject.getTracks().forEach((track) => track.stop());
+        }
+      });
+    </scrip> -->
+  </body>
+</html>
