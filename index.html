@@ -5,7 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MediaRecorder Streamer and Capture</title>
-    <!-- <script src="./script.js"></script> -->
+    <script src="./jszip.js"></script>
+    <script src="./jszip.min.js"></script>
   </head>
 
   <body>
@@ -17,6 +18,7 @@
       <button id="request" onclick="requestVideo()">Request Camera</button>
       <button id="start" onclick="startRecording()">Start Recording</button>
       <button id="stop" onclick="stopRecording()">Stop Recording</button>
+      <button id="download" onclick="downloadAll()">Download All</button>
       <ul id="ul">
         Downloads List:
       </ul>
@@ -41,15 +43,18 @@
         stream,
         recorder,
         streamletRecorder,
-        streamletUpload;
+        streamletUpload,
+        downloadButton;
       video = document.getElementById("video");
       reqBtn = document.getElementById("request");
       startBtn = document.getElementById("start");
       stopBtn = document.getElementById("stop");
       ul = document.getElementById("ul");
+      downloadButton = document.getElementById("download");
       startBtn.disabled = true;
       ul.style.display = "none";
       stopBtn.disabled = true;
+      downloadButton.disabled = true;
       const mediaStream = new MediaStream();
 
       function requestVideo() {
@@ -131,6 +136,49 @@
         streamletRecorder.stop();
         startBtn.removeAttribute("disabled");
         stopBtn.disabled = true;
+        downloadButton.disabled = false;
+      }
+
+      function downloadAll() {
+        const links = document.querySelectorAll("a");
+        const zip = new JSZip();
+        const promises = [];
+        // Loop over the links and add each one to the zip file
+        links.forEach((link) => {
+          const filename = link.download || link.href.split("/").pop();
+          const promise = fetch(link.href)
+            .then((response) => response.blob())
+            .then((blob) => {
+              zip.file(filename, blob);
+            })
+            .catch((error) => {
+              console.error(`Failed to download ${link.href}:`, error);
+            });
+          promises.push(promise);
+        });
+        // Generate the zip file and trigger the download
+        Promise.all(promises).then(() => {
+          zip.generateAsync({ type: "blob" }).then((blob) => {
+            const downloadLink = document.createElement("a");
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = "all_links.zip";
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+          });
+        });
+
+        // links.forEach((link) => {
+        //   // Create a temporary anchor element to trigger the download
+        //   const downloadLink = document.createElement("a");
+        //   downloadLink.href = link.href;
+        //   downloadLink.download = link.download || link.textContent;
+        //   downloadLink.style.display = "none";
+        //   document.body.appendChild(downloadLink);
+        //   downloadLink.click();
+        //   document.body.removeChild(downloadLink);
+        // });
       }
     </script>
   </body>
