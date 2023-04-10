@@ -10,17 +10,13 @@
   </head>
 
   <body>
-    <!-- <h1>My MediaRecorder Streamer</h1>
-    <video id="video" width="720" height="480"></video
-    ><span id="time">00:00</span> <button id="startBtn">Record</button
-    ><button id="stopBtn" disabled>Stop</button> -->
     <div>
       <button id="request" onclick="requestVideo()">Request Camera</button>
       <button id="start" onclick="startRecording()">Start Recording</button>
       <button id="stop" onclick="stopRecording()">Stop Recording</button>
       <button id="download" onclick="downloadAll()">Download All</button>
       <ul id="ul">
-        Downloads List:
+        "Server":
       </ul>
     </div>
     <video
@@ -76,11 +72,11 @@
 
       function startRecording() {
         recorder = new MediaRecorder(stream, {
-          mimeType: 'video/webm;codecs=h264,vp9,opus"',
+          mimeType: 'video/mp4; codecs="avc1.424028, mp4a.40.2"',
           bitsPerSecond: 5000000,
         });
         streamletRecorder = new MediaRecorder(stream, {
-          mimeType: 'video/webm;codecs=h264,vp9,opus"',
+          mimeType: 'video/mp4; codecs="avc1.424028, mp4a.40.2"',
           bitsPerSecond: 5000000,
         });
         recorder.start();
@@ -103,7 +99,7 @@
               a.download = [
                 "streamlet_video_",
                 (new Date() + "").slice(4, 28),
-                ".webm",
+                ".mp4",
               ].join("");
               a.href = URL.createObjectURL(e.data);
               a.textContent = a.download;
@@ -125,7 +121,7 @@
           a.download = [
             "full_video_",
             (new Date() + "").slice(4, 28),
-            ".webm",
+            ".mp4",
           ].join("");
           a.href = URL.createObjectURL(e.data);
           a.textContent = a.download;
@@ -168,17 +164,6 @@
             document.body.removeChild(downloadLink);
           });
         });
-
-        // links.forEach((link) => {
-        //   // Create a temporary anchor element to trigger the download
-        //   const downloadLink = document.createElement("a");
-        //   downloadLink.href = link.href;
-        //   downloadLink.download = link.download || link.textContent;
-        //   downloadLink.style.display = "none";
-        //   document.body.appendChild(downloadLink);
-        //   downloadLink.click();
-        //   document.body.removeChild(downloadLink);
-        // });
       }
     </script>
   </body>
