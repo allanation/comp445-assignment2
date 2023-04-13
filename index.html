@@ -7,6 +7,7 @@
     <title>MediaRecorder Streamer and Capture</title>
     <script src="./jszip.js"></script>
     <script src="./jszip.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
 
   <body>
@@ -50,8 +51,9 @@
       startBtn.disabled = true;
       ul.style.display = "none";
       stopBtn.disabled = true;
-      downloadButton.disabled = true;
+      // downloadButton.disabled = true;
       const mediaStream = new MediaStream();
+      var segmentsArray = [];
 
       function requestVideo() {
         navigator.mediaDevices
@@ -105,6 +107,10 @@
               a.textContent = a.download;
               li.appendChild(a);
               ul.appendChild(li);
+              segmentsArray.push({
+                fileName: a.download,
+                fileData: e.data,
+              });
             };
             streamletRecorder.start();
           } else {
@@ -133,6 +139,7 @@
         startBtn.removeAttribute("disabled");
         stopBtn.disabled = true;
         downloadButton.disabled = false;
+        writeToDatabase(segmentsArray);
       }
 
       function downloadAll() {
@@ -164,6 +171,28 @@
             document.body.removeChild(downloadLink);
           });
         });
+      }
+
+      function writeToDatabase(streamToUpload) {
+        for (let idx in streamToUpload) {
+          const formData = new FormData();
+          formData.append("fileName", streamToUpload[idx].fileName);
+          formData.append("fileData", streamToUpload[idx].fileData);
+          const headers = new Headers();
+          console.log(formData);
+          fetch("http://localhost:3000/upload", {
+            method: "POST",
+            body: formData,
+            headers: headers,
+          })
+            .then((response) => {
+              console.log(response);
+              console.log(`Streamlet ${idx + 1} Uploaded Successfully`);
+            })
+            .catch((error) => {
+              console.error(`Error Uploading Streamlet ${idx + 1}:`, error);
+            });
+        }
       }
     </script>
   </body>
